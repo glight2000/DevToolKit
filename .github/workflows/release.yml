@@ -5,11 +5,25 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
-    inputs:
-      create_release:
-        description: 'Create a GitHub release from these builds'
-        required: false
-        default: 'false'
+
+# ──────────────────────────────────────────────────────────────────────
+# Code-signing secrets (optional — the workflow builds unsigned if absent):
+#
+#   WINDOWS:
+#     WINDOWS_CSC_LINK           base64-encoded .pfx file contents
+#     WINDOWS_CSC_KEY_PASSWORD   password for the .pfx file
+#
+#   MACOS:
+#     MAC_CSC_LINK               base64-encoded .p12 file contents
+#                                (exported from Keychain with a password)
+#     MAC_CSC_KEY_PASSWORD       password for the .p12 file
+#     APPLE_ID                   Apple ID email
+#     APPLE_APP_SPECIFIC_PASSWORD  app-specific password from appleid.apple.com
+#     APPLE_TEAM_ID              10-char Team ID (from the Apple Developer portal)
+#
+# Add them at: Settings → Secrets and variables → Actions → New repository secret
+# Once any of the above exist, the corresponding platform will be signed automatically.
+# ──────────────────────────────────────────────────────────────────────
 
 jobs:
   build:
@@ -33,26 +47,46 @@ jobs:
       - name: Install dependencies
         run: npm ci
         env:
-          # Skip devtron / fsevents optional failures on Linux
           npm_config_build_from_source: false
 
       - name: Build app (vite)
         run: npm run build
 
-      - name: Package with electron-builder
+      # ── Windows: package with optional signing ─────────────────────
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
         shell: bash
-        run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            npx electron-builder --mac --config electron-builder.yml --publish never
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            npx electron-builder --win --config electron-builder.yml --publish never
-          else
-            npx electron-builder --linux --config electron-builder.yml --publish never
-          fi
+        run: npx electron-builder --win --config electron-builder.yml --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Skip code signing — the repo ships unsigned
+          # If WINDOWS_CSC_LINK is set, electron-builder will sign.
+          # If not, CSC_LINK is empty and signing is skipped gracefully.
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      # ── macOS: package with optional signing + notarization ────────
+      - name: Package (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: npx electron-builder --mac --config electron-builder.yml --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Auto-discover identity in keychain only if a CSC_LINK was provided
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.MAC_CSC_LINK != '' }}
+
+      # ── Linux: no signing required ─────────────────────────────────
+      - name: Package (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: npx electron-builder --linux --config electron-builder.yml --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -72,7 +106,6 @@ jobs:
     name: Publish Release
     needs: build
     runs-on: ubuntu-latest
-    # Only publish a release when triggered by a tag push
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write

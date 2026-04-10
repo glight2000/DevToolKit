@@ -6,15 +6,50 @@ directories:
 files:
   - out/**/*
   - '!**/*.map'
+# Rebuild native modules (better-sqlite3) against Electron's Node ABI.
+npmRebuild: true
+
 win:
-  target: nsis
+  target:
+    - target: nsis
+      arch:
+        - x64
   icon: resources/icon.png
+  # Signing is driven by env vars (CSC_LINK / CSC_KEY_PASSWORD) set by the
+  # GitHub Actions workflow. If they're absent the build stays unsigned.
+  signAndEditExecutable: true
+
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: DevToolkit
+
 mac:
-  target: dmg
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
   icon: resources/icon.png
+  category: public.app-category.developer-tools
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  # Entitlements needed when the app is signed + notarized.
+  # Not required for unsigned builds, but harmless to leave configured.
+  # Notarization is enabled automatically when APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD
+  # / APPLE_TEAM_ID are present in the environment.
+  notarize: false
+
 linux:
-  target: AppImage
+  target:
+    - target: AppImage
+      arch:
+        - x64
   icon: resources/icon.png
+  category: Development
+  synopsis: Pluggable multi-tool desktop app for developers
+
+# Publish is driven by the GitHub Actions workflow using softprops/action-gh-release,
+# so electron-builder itself uses --publish never. No publish section needed here.
