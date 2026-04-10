@@ -51,6 +51,14 @@ secrets.json
 # Electron / native
 *.node
 
+# Runtime databases (in case anyone copies them into the project dir)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
 # Cache
 .cache/
 .parcel-cache/
