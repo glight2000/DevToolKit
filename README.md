@@ -2,6 +2,8 @@
 
 A pluggable multi-tool desktop application for developers, built with Electron, React, and TypeScript. Ships with SSH tunnel management, a markdown notebook, an image editor, and a handful of everyday utilities — all accessible from a single sidebar.
 
+**English** | [简体中文](./README.zh-CN.md)
+
 ![platform](https://img.shields.io/badge/platform-win%20%7C%20mac%20%7C%20linux-lightgrey)
 ![electron](https://img.shields.io/badge/electron-33-47848F?logo=electron&logoColor=white)
 ![react](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)
@@ -164,11 +166,53 @@ npx electron-rebuild -f -w better-sqlite3
 - **macOS** — `dist/DevToolkit-<version>.dmg`
 - **Linux** — `dist/DevToolkit-<version>.AppImage`
 
-`electron-builder` can only target the current OS; to produce all three you need a CI matrix (e.g. GitHub Actions).
+`electron-builder` can only target the current OS; to produce all three you need a CI matrix — see [Cloud Build](#cloud-build) below.
 
 ### Code signing
 
 The repo ships **unsigned**. On Windows, first-time users will see a SmartScreen warning (choose "More info" → "Run anyway"). To ship signed builds, add a code-signing certificate config under the `win` / `mac` keys in [electron-builder.yml](electron-builder.yml).
+
+---
+
+## Cloud Build
+
+A GitHub Actions workflow at [.github/workflows/release.yml](.github/workflows/release.yml) builds the app for **Windows, macOS, and Linux in parallel** — no need to own all three operating systems.
+
+### Triggers
+
+**Option 1 — push a tag (recommended)**
+
+```bash
+# Bump the version
+npm version 1.0.1
+
+# Push the tag — triggers the workflow
+git push origin main --tags
+```
+
+**Option 2 — manual dispatch**
+
+Go to **Actions** → **Release** → **Run workflow**.
+
+### What the workflow does
+
+1. Runs in parallel on `ubuntu-latest`, `macos-latest`, and `windows-latest`.
+2. Each runner runs `npm ci` + `npm run build` + `electron-builder`. `better-sqlite3` is rebuilt for each platform's Electron automatically.
+3. When triggered by a tag, a draft GitHub Release is created with all platform installers attached. When triggered manually, binaries are uploaded as workflow artifacts instead.
+
+### Manual releases (without CI)
+
+If you already built locally with `npm run package`, you can publish a release yourself:
+
+- **Web UI**: open the repo's **Releases** page → **Draft a new release** → pick a tag → attach `dist/DevToolkit Setup <version>.exe` → **Publish**.
+- **[GitHub CLI](https://cli.github.com/)**:
+  ```bash
+  git tag v1.0.0 && git push origin v1.0.0
+  gh release create v1.0.0 \
+    "dist/DevToolkit Setup 1.0.0.exe" \
+    --title "DevToolkit 1.0.0" \
+    --notes "First release"
+  ```
 
 ---
 
