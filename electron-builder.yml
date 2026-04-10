@@ -29,18 +29,19 @@ nsis:
 mac:
   target:
     - target: dmg
+      # macos-latest runner is Apple Silicon (arm64). Building x64 from arm64
+      # requires cross-compiling native modules (better-sqlite3) which is
+      # fragile on CI. Ship arm64 only for now — add x64 via a separate
+      # runner later when needed.
       arch:
-        - x64
         - arm64
   icon: resources/icon.png
   category: public.app-category.developer-tools
-  hardenedRuntime: true
+  # Disable any implicit signing attempts when no cert is provided.
+  identity: null
+  # hardenedRuntime + notarize are opt-in; leave them off for unsigned builds.
+  # The CI workflow flips them on via env vars only when real certs exist.
   gatekeeperAssess: false
-  # Entitlements needed when the app is signed + notarized.
-  # Not required for unsigned builds, but harmless to leave configured.
-  # Notarization is enabled automatically when APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD
-  # / APPLE_TEAM_ID are present in the environment.
-  notarize: false
 
 linux:
   target:
