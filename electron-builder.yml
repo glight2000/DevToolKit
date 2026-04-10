@@ -1,0 +1,20 @@
+appId: com.devtoolkit.app
+productName: DevToolkit
+directories:
+  buildResources: resources
+  output: dist
+files:
+  - out/**/*
+  - '!**/*.map'
+win:
+  target: nsis
+  icon: resources/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+mac:
+  target: dmg
+  icon: resources/icon.png
+linux:
+  target: AppImage
+  icon: resources/icon.png
