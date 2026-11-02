@@ -6,7 +6,7 @@ interface EmptyStateProps {
 
 export default function EmptyState({ onCreateTunnel }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-24 px-4">
+    <div className="flex min-h-full flex-col items-center justify-center py-8 px-4">
       <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface-800 mb-6">
         <Server className="h-10 w-10 text-slate-500" />
       </div>

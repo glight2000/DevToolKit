@@ -200,14 +200,14 @@ export async function removePubKey(
 
   // Extract the base64 portion (second token) — unique enough for matching
   const parts = sanitized.split(/\s+/)
-  if (parts.length < 2) {
+  if (parts.length < 2 || !/^[A-Za-z0-9+/]+={0,2}$/.test(parts[1])) {
     return { success: false, error: 'Invalid public key format' }
   }
-  const keyBase64 = parts[1].replace(/[/+]/g, '\\$&') // escape regex-special chars for grep
+  const keyBase64 = parts[1]
 
   // grep -v removes matching lines, write back atomically via temp file
   const command = [
-    `grep -v '${keyBase64}' ~/.ssh/authorized_keys > ~/.ssh/authorized_keys.tmp 2>/dev/null || true`,
+    `grep -vF -- '${keyBase64}' ~/.ssh/authorized_keys > ~/.ssh/authorized_keys.tmp 2>/dev/null || true`,
     'mv ~/.ssh/authorized_keys.tmp ~/.ssh/authorized_keys',
     'chmod 600 ~/.ssh/authorized_keys',
     'echo "OK"'

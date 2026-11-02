@@ -26,6 +26,10 @@ export function initSchema(db: Database.Database): void {
       updated_at INTEGER NOT NULL
     )
   `)
+  const columns = db.prepare('PRAGMA table_info(tunnels)').all() as { name: string }[]
+  if (!columns.some(column => column.name === 'keep_alive_count_max')) {
+    db.exec('ALTER TABLE tunnels ADD COLUMN keep_alive_count_max INTEGER NOT NULL DEFAULT 3')
+  }
 }
 
 interface TunnelRow {
@@ -47,6 +51,7 @@ interface TunnelRow {
   auto_start: number
   auto_reconnect: number
   keep_alive_interval: number
+  keep_alive_count_max: number
   created_at: number
   updated_at: number
 }
@@ -91,6 +96,7 @@ function rowToConfig(row: TunnelRow, decrypt: (text: string) => string): TunnelC
     autoStart: row.auto_start === 1,
     autoReconnect: row.auto_reconnect === 1,
     keepAliveInterval: row.keep_alive_interval,
+    keepAliveCountMax: row.keep_alive_count_max ?? 3,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -115,14 +121,14 @@ export function saveTunnel(
       ssh_host, ssh_port, username, auth_type,
       password, private_key_path, passphrase,
       local_host, local_port, remote_host, remote_port,
-      auto_start, auto_reconnect, keep_alive_interval,
+      auto_start, auto_reconnect, keep_alive_interval, keep_alive_count_max,
       created_at, updated_at
     ) VALUES (
       @id, @name, @remarks, @type,
       @ssh_host, @ssh_port, @username, @auth_type,
       @password, @private_key_path, @passphrase,
       @local_host, @local_port, @remote_host, @remote_port,
-      @auto_start, @auto_reconnect, @keep_alive_interval,
+      @auto_start, @auto_reconnect, @keep_alive_interval, @keep_alive_count_max,
       @created_at, @updated_at
     )
   `)
@@ -146,6 +152,7 @@ export function saveTunnel(
     auto_start: config.autoStart ? 1 : 0,
     auto_reconnect: config.autoReconnect ? 1 : 0,
     keep_alive_interval: config.keepAliveInterval,
+    keep_alive_count_max: config.keepAliveCountMax ?? 3,
     created_at: config.createdAt,
     updated_at: config.updatedAt
   })

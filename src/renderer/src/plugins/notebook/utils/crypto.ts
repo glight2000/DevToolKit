@@ -13,7 +13,8 @@ function bufferToHex(buffer: ArrayBuffer): string {
     .join('')
 }
 
-function hexToBuffer(hex: string): Uint8Array {
+function hexToBuffer(hex: string): Uint8Array<ArrayBuffer> {
+  if (!/^(?:[0-9a-f]{2})+$/i.test(hex)) throw new Error('Invalid hexadecimal data')
   const bytes = new Uint8Array(hex.length / 2)
   for (let i = 0; i < bytes.length; i++) {
     bytes[i] = parseInt(hex.substr(i * 2, 2), 16)
@@ -39,7 +40,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return computed === hash
 }
 
-async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveKey(password: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   const enc = new TextEncoder()
   const baseKey = await crypto.subtle.importKey(
     'raw',

@@ -29,13 +29,11 @@ export default function TranslationPage() {
   )
 
   const handleSwap = useCallback(() => {
-    setSourceLang((prev) => {
-      setTargetLang(prev)
-      return targetLang
-    })
+    setSourceLang(targetLang)
+    setTargetLang(sourceLang)
     setSourceText(translatedText)
     setSwapRotation((r) => r + 180)
-  }, [targetLang, translatedText])
+  }, [sourceLang, targetLang, translatedText])
 
   const handleClear = useCallback(() => {
     setSourceText('')
@@ -49,14 +47,16 @@ export default function TranslationPage() {
           <Languages className="h-5 w-5 text-blue-400" />
           <h1 className="text-lg font-bold text-slate-100">Translation</h1>
         </div>
+        <p className="mt-1.5 text-sm text-slate-400">Translate as you type. Compare the original and result side by side.</p>
       </div>
 
       {/* Language selector bar */}
       <div className="shrink-0 flex items-center justify-center gap-4 border-b border-surface-800 bg-surface-900/50 px-6 py-3">
         <select
+          aria-label="Source language"
           value={sourceLang}
           onChange={(e) => setSourceLang(e.target.value)}
-          className="rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm font-medium text-slate-100 outline-none focus:border-blue-500 transition-colors"
+          className="rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm font-medium text-slate-100 outline-hidden focus:border-blue-500 transition-colors"
         >
           {LANGUAGES.map((lang) => (
             <option key={lang.code} value={lang.code}>
@@ -66,6 +66,8 @@ export default function TranslationPage() {
         </select>
 
         <button
+          aria-label="Swap languages"
+          disabled={loading || (!!sourceText && !translatedText)}
           onClick={handleSwap}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-surface-700 bg-surface-800 text-slate-400 transition-all duration-300 hover:border-blue-500 hover:text-blue-400 hover:bg-surface-700"
           title="Swap languages"
@@ -77,9 +79,10 @@ export default function TranslationPage() {
         </button>
 
         <select
+          aria-label="Target language"
           value={targetLang}
           onChange={(e) => setTargetLang(e.target.value)}
-          className="rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm font-medium text-slate-100 outline-none focus:border-blue-500 transition-colors"
+          className="rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-sm font-medium text-slate-100 outline-hidden focus:border-blue-500 transition-colors"
         >
           {LANGUAGES.map((lang) => (
             <option key={lang.code} value={lang.code}>
@@ -90,26 +93,22 @@ export default function TranslationPage() {
       </div>
 
       {/* Text areas */}
-      <div className="flex flex-1 min-h-0">
+      <div className="grid grid-cols-2 flex-1 min-h-0 gap-4 p-5 overflow-y-auto">
         {/* Source panel */}
-        <div className="flex flex-1 flex-col border-r border-surface-800">
-          <div className="relative flex flex-1 flex-col">
+        <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-surface-700 bg-surface-800">
+          <div className="flex h-11 shrink-0 items-center justify-between border-b border-surface-700 px-4">
+            <span className="text-xs font-semibold text-slate-400">Original</span>
+            {sourceText && <button onClick={handleClear} aria-label="Clear source text" title="Clear" className="rounded-md p-1.5 text-slate-400 hover:bg-surface-700"><X className="h-3.5 w-3.5" /></button>}
+          </div>
+          <div className="relative flex flex-1 min-h-0 flex-col">
             <textarea
+              aria-label="Text to translate"
               value={sourceText}
               onChange={(e) => setSourceText(e.target.value)}
               placeholder="Enter text to translate..."
-              className="flex-1 min-h-[300px] resize-none bg-surface-800 p-4 text-sm leading-relaxed text-slate-100 placeholder-slate-500 outline-none font-mono"
+              className="w-full flex-1 min-h-[120px] resize-none bg-surface-800 p-4 text-sm leading-7 text-slate-100 placeholder-slate-500 outline-hidden"
               spellCheck={false}
             />
-            {sourceText && (
-              <button
-                onClick={handleClear}
-                className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-surface-700 hover:text-slate-300"
-                title="Clear"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
           <div className="shrink-0 flex items-center border-t border-surface-800 bg-surface-900/50 px-4 py-2">
             <span className="text-xs text-slate-500">
@@ -119,37 +118,32 @@ export default function TranslationPage() {
         </div>
 
         {/* Target panel */}
-        <div className="flex flex-1 flex-col">
-          <div className="relative flex flex-1">
-            {loading && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface-850/80 backdrop-blur-sm">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-sm">Translating...</span>
-                </div>
-              </div>
-            )}
+        <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-surface-700 bg-surface-850" aria-busy={loading}>
+          <div className="flex h-11 shrink-0 items-center justify-between border-b border-surface-700 px-4">
+            <span className="text-xs font-semibold text-slate-400">Translation</span>
+            <span role="status" className="flex items-center gap-2 text-xs text-blue-400">{loading && <><Loader2 className="h-3.5 w-3.5 animate-spin" />Translating...</>}</span>
+          </div>
+          <div className="relative flex flex-1 min-h-0">
             <textarea
+              aria-label="Translated text"
               value={translatedText}
               readOnly
-              placeholder="Type something to translate..."
-              className="flex-1 min-h-[300px] resize-none bg-surface-850 p-4 text-sm leading-relaxed text-slate-100 placeholder-slate-500 outline-none font-mono"
+              placeholder="Your translation will appear here"
+              className="w-full flex-1 min-h-[120px] resize-none bg-surface-850 p-4 text-sm leading-7 text-slate-100 placeholder-slate-500 outline-hidden"
               spellCheck={false}
             />
           </div>
           <div className="shrink-0 flex items-center justify-between border-t border-surface-800 bg-surface-900/50 px-4 py-2">
             <div>
               {error && (
-                <span className="text-xs text-red-400">{error}</span>
+                <span role="alert" className="text-xs text-red-400">{error}</span>
               )}
             </div>
             <div className="flex items-center gap-2">
               {source && !loading && translatedText && (
                 <span className="text-xs text-slate-500">via {source}</span>
               )}
-              {translatedText && (
-                <CopyButton text={translatedText} label="Copy" />
-              )}
+              <CopyButton text={loading ? '' : translatedText} label="Copy" />
             </div>
           </div>
         </div>

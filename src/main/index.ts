@@ -1,7 +1,7 @@
-import { app, BrowserWindow, shell, ipcMain, Tray, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, Tray, Menu, nativeImage, dialog } from 'electron'
 import { join } from 'path'
 import { PluginHost } from './plugin-host'
-import { DatabaseManager } from './lib/db'
+import { DatabaseManager, prepareDatabaseDirectory } from './lib/db'
 import {
   getWindowBounds,
   saveWindowBounds,
@@ -11,16 +11,21 @@ import {
   saveSidebarCollapsed,
   getTheme,
   saveTheme,
+  getInterfaceMode,
+  saveInterfaceMode,
   type Theme
 } from './lib/store'
+import type { InterfaceMode } from '../shared/settings'
 
 // Import all plugins
 import { sshTunnelPlugin } from './plugins/ssh-tunnel'
+import { sshConnectionsPlugin } from './plugins/ssh-connections'
 import { notebookPlugin } from './plugins/notebook'
 import { cryptoToolsPlugin } from './plugins/crypto-tools'
 import { timeToolsPlugin } from './plugins/time-tools'
 import { translationPlugin } from './plugins/translation'
-import { imageEditorPlugin } from './plugins/image-editor'
+import { desktopPlugin } from './plugins/desktop'
+import { subscriptionsPlugin } from './plugins/subscriptions'
 
 let mainWindow: BrowserWindow | null = null
 let pluginHost: PluginHost | null = null
@@ -53,10 +58,10 @@ function createWindow(): BrowserWindow {
     title: 'DevToolkit',
     icon: getTrayIcon(),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   })
 
@@ -65,8 +70,16 @@ function createWindow(): BrowserWindow {
   })
 
   window.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    if (/^(https?:|mailto:)/i.test(details.url)) {
+      shell.openExternal(details.url).catch((error) => {
+        console.error('Failed to open external link:', error)
+      })
+    }
     return { action: 'deny' }
+  })
+
+  window.webContents.on('will-navigate', (event) => {
+    event.preventDefault()
   })
 
   // Intercept close: hide window instead of quitting
@@ -143,10 +156,17 @@ if (!gotLock) {
   app.whenReady().then(async () => {
     app.setAppUserModelId?.('com.devtoolkit.app')
 
+    let databaseDirectory: string
+    try { databaseDirectory = await prepareDatabaseDirectory(app.getPath('userData')) }
+    catch {
+      dialog.showErrorBox('数据库迁移未完成', '现有数据未覆盖。请检查磁盘空间、目录权限，并关闭占用数据库的其他程序后重新启动。')
+      app.quit(); return
+    }
+
     mainWindow = createWindow()
     createTray()
 
-    const dbManager = new DatabaseManager(join(app.getPath('userData'), 'databases'))
+    const dbManager = new DatabaseManager(databaseDirectory)
 
     const sendToRenderer = (channel: string, ...args: unknown[]) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
@@ -158,17 +178,20 @@ if (!gotLock) {
 
     // Register all plugins
     pluginHost.register(sshTunnelPlugin)
+    pluginHost.register(sshConnectionsPlugin)
     pluginHost.register(notebookPlugin)
     pluginHost.register(cryptoToolsPlugin)
     pluginHost.register(timeToolsPlugin)
     pluginHost.register(translationPlugin)
-    pluginHost.register(imageEditorPlugin)
+    pluginHost.register(desktopPlugin)
+    pluginHost.register(subscriptionsPlugin)
 
     // App-level IPC handlers (register before plugins so they're always available)
     ipcMain.handle('app:get-settings', () => ({
       activePluginId: getActivePluginId(),
       sidebarCollapsed: getSidebarCollapsed(),
-      theme: getTheme()
+      theme: getTheme(),
+      interfaceMode: getInterfaceMode()
     }))
     ipcMain.handle('app:save-active-plugin', (_e, id: string) => {
       saveActivePluginId(id)
@@ -177,7 +200,12 @@ if (!gotLock) {
       saveSidebarCollapsed(collapsed)
     })
     ipcMain.handle('app:save-theme', (_e, theme: Theme) => {
+      if (theme !== 'dark' && theme !== 'light') throw new Error('Invalid theme')
       saveTheme(theme)
+      for (const window of BrowserWindow.getAllWindows()) window.webContents.send('app:theme-changed', theme)
+    })
+    ipcMain.handle('app:save-interface-mode', (_e, mode: InterfaceMode) => {
+      saveInterfaceMode(mode)
     })
     ipcMain.handle('app:quit', () => {
       isQuitting = true

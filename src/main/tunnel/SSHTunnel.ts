@@ -70,7 +70,7 @@ export class SSHTunnel extends EventEmitter {
       port: this.config.sshPort,
       username: this.config.username,
       keepaliveInterval: this.config.keepAliveInterval * 1000,
-      keepaliveCountMax: 3,
+      keepaliveCountMax: this.config.keepAliveCountMax ?? 3,
       readyTimeout: 20_000
     }
 

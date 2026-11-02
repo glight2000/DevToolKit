@@ -5,6 +5,8 @@ import DocumentTree from './components/DocumentTree'
 import EditorToolbar from './components/EditorToolbar'
 import MarkdownPreview from './components/MarkdownPreview'
 import PasswordPrompt from './components/PasswordPrompt'
+import { PendingSave } from './utils/pendingSave'
+import ParagraphEditor from '../../components/common/ParagraphEditor'
 import {
   hashPassword,
   verifyPassword,
@@ -44,7 +46,7 @@ export default function NotebookPage() {
   // Track which doc id the decryptedContent/unlockedPassword belong to
   const unlockedDocIdRef = useRef<string | null>(null)
   // Debounce for encrypted save
-  const encryptSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const encryptedSaves = useRef(new PendingSave())
 
   // When selectedDoc changes: determine if we need to prompt for a password
   useEffect(() => {
@@ -70,13 +72,15 @@ export default function NotebookPage() {
 
   // Cleanup encrypt-save timer on unmount / doc change
   useEffect(() => {
+    const saves = encryptedSaves.current
     return () => {
-      if (encryptSaveTimerRef.current) clearTimeout(encryptSaveTimerRef.current)
+      void saves.flush().catch((error) => console.error('Failed to save encrypted document:', error))
     }
   }, [])
 
   const handleSelect = useCallback(
     async (id: string) => {
+      await encryptedSaves.current.flush()
       await selectDocument(id)
     },
     [selectDocument]
@@ -84,6 +88,7 @@ export default function NotebookPage() {
 
   const handleCreate = useCallback(
     async (parentId: string | null, title: string) => {
+      await encryptedSaves.current.flush()
       const doc = await createDocument(parentId, title)
       if (doc) {
         await selectDocument(doc.id)
@@ -94,6 +99,7 @@ export default function NotebookPage() {
 
   const handleDelete = useCallback(
     async (id: string) => {
+      await encryptedSaves.current.flush()
       await deleteDocument(id)
     },
     [deleteDocument]
@@ -137,6 +143,7 @@ export default function NotebookPage() {
 
   const handleToggleEncrypt = useCallback(async () => {
     if (!selectedDoc) return
+    await encryptedSaves.current.flush()
 
     if (selectedDoc.isEncrypted) {
       // Disabling encryption — must have unlocked first
@@ -216,9 +223,9 @@ export default function NotebookPage() {
 
   // Plain-content change (non-encrypted doc)
   const handleContentChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    (value: string) => {
       if (selectedId) {
-        saveContent(selectedId, e.target.value)
+        saveContent(selectedId, value)
       }
     },
     [selectedId, saveContent]
@@ -226,19 +233,13 @@ export default function NotebookPage() {
 
   // Encrypted-content change: re-encrypt and save debounced
   const handleEncryptedContentChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value
+    (newValue: string) => {
       setDecryptedContent(newValue)
       if (!selectedId || !unlockedPassword) return
-      if (encryptSaveTimerRef.current) clearTimeout(encryptSaveTimerRef.current)
-      encryptSaveTimerRef.current = setTimeout(async () => {
-        try {
-          const encrypted = await encryptWithPassword(newValue, unlockedPassword)
-          await saveEncryptedContent(selectedId, encrypted)
-        } catch (err) {
-          console.error('Failed to save encrypted content:', err)
-        }
-      }, 1000)
+      encryptedSaves.current.schedule(async () => {
+        const encrypted = await encryptWithPassword(newValue, unlockedPassword)
+        await saveEncryptedContent(selectedId, encrypted)
+      })
     },
     [selectedId, unlockedPassword, saveEncryptedContent]
   )
@@ -295,19 +296,22 @@ export default function NotebookPage() {
         <div className="relative flex flex-1 flex-col overflow-hidden bg-surface-800">
           {!selectedDoc ? (
             /* Empty state */
-            <div className="flex h-full flex-col items-center justify-center text-slate-400">
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center text-slate-400">
               <FileText className="mb-4 h-12 w-12 text-slate-700" />
               <h2 className="text-lg font-semibold text-slate-300">Notebook</h2>
               <p className="mt-1 text-sm text-slate-500">
                 Select a document or create a new one to get started
               </p>
+              <button onClick={handleNewDoc} className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">Create a document</button>
             </div>
           ) : contentLoading ? (
             <div className="flex h-full items-center justify-center">
               <RefreshCw className="h-5 w-5 animate-spin text-blue-400" />
             </div>
           ) : mode === 'edit' ? (
-            <textarea
+            <ParagraphEditor
+              key={selectedId}
+              label="Document content"
               value={editorContent}
               onChange={editorOnChange}
               readOnly={editorReadOnly}
@@ -316,8 +320,6 @@ export default function NotebookPage() {
                   ? 'Document is encrypted — unlock to view'
                   : 'Start writing...'
               }
-              className="h-full w-full resize-none bg-surface-800 px-8 py-6 font-mono text-sm text-slate-200 placeholder-slate-600 focus:outline-none"
-              spellCheck={false}
             />
           ) : (
             <MarkdownPreview content={editorContent} />

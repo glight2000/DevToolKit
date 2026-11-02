@@ -253,7 +253,7 @@ export default function TunnelCard({ tunnel, onStart, onStop, onEdit, onDelete }
                 <button
                   onClick={handleRemovePubKey}
                   disabled={deploying}
-                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-red-600/15 hover:text-red-400 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium text-slate-500 hover:bg-red-600/15 hover:text-red-400 transition-colors disabled:opacity-50"
                   title="Remove public key from remote"
                 >
                   {deploying ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Trash2 className="h-2.5 w-2.5" />}
@@ -270,14 +270,14 @@ export default function TunnelCard({ tunnel, onStart, onStop, onEdit, onDelete }
                 <button
                   onClick={handleDeployPubKey}
                   disabled={deploying}
-                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-blue-600/15 text-blue-400 hover:bg-blue-600/30 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium bg-blue-600/15 text-blue-400 hover:bg-blue-600/30 transition-colors disabled:opacity-50"
                 >
                   {deploying ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <KeyRound className="h-2.5 w-2.5" />}
                   Deploy Key
                 </button>
                 <button
                   onClick={checkPubKey}
-                  className="rounded p-0.5 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="rounded-sm p-0.5 text-slate-500 hover:text-slate-300 transition-colors"
                   title="Re-check"
                 >
                   <RefreshCw className="h-2.5 w-2.5" />

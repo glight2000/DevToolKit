@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDialog } from '../../../hooks/useDialog'
 import { Shield, Eye, EyeOff, X, AlertCircle } from 'lucide-react'
 
 interface PasswordPromptProps {
@@ -9,6 +10,7 @@ interface PasswordPromptProps {
 }
 
 export default function PasswordPrompt({ purpose, error, onSubmit, onCancel }: PasswordPromptProps) {
+  const dialogRef = useDialog(true, onCancel)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -34,8 +36,8 @@ export default function PasswordPrompt({ purpose, error, onSubmit, onCancel }: P
   const displayError = localError ?? error
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-surface-950/80 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-xl border border-surface-700 bg-surface-800 p-6 shadow-2xl">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-surface-950/80 backdrop-blur-xs">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={isSetup ? 'Set Password' : 'Encrypted Document'} tabIndex={-1} className="w-full max-w-sm rounded-xl border border-surface-700 bg-surface-800 p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Shield className="h-5 w-5 text-blue-400" />
@@ -44,6 +46,7 @@ export default function PasswordPrompt({ purpose, error, onSubmit, onCancel }: P
             </h3>
           </div>
           <button
+            aria-label="Close dialog"
             onClick={onCancel}
             className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-surface-700 hover:text-slate-100"
           >
@@ -60,17 +63,19 @@ export default function PasswordPrompt({ purpose, error, onSubmit, onCancel }: P
         <form onSubmit={handleSubmit}>
           <div className="relative mb-3">
             <input
+              aria-label={isSetup ? 'New password' : 'Password'}
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={isSetup ? 'New password...' : 'Enter password...'}
               autoFocus
-              className="w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 pr-10 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 pr-10 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 transition-colors hover:text-slate-200"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-1 text-slate-400 transition-colors hover:text-slate-200"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -79,17 +84,18 @@ export default function PasswordPrompt({ purpose, error, onSubmit, onCancel }: P
           {isSetup && (
             <div className="mb-3">
               <input
+                aria-label="Confirm password"
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm password..."
-                className="w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
             </div>
           )}
 
           {displayError && (
-            <div className="mb-3 flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-xs text-red-400">
+            <div role="alert" className="mb-3 flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-xs text-red-400">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" />
               {displayError}
             </div>

@@ -22,7 +22,11 @@ const tabComponents: Record<string, React.ComponentType> = {
 
 export default function TimeToolsPage() {
   const [activeTab, setActiveTab] = useState('current')
-  const ActiveComponent = tabComponents[activeTab]
+  const [visitedTabs, setVisitedTabs] = useState(['current'])
+  const selectTab = (key: string) => {
+    setActiveTab(key)
+    setVisitedTabs(previous => previous.includes(key) ? previous : [...previous, key])
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -31,10 +35,14 @@ export default function TimeToolsPage() {
           <Clock className="h-5 w-5 text-blue-400" />
           <h1 className="text-lg font-bold text-slate-100">Time Tools</h1>
         </div>
-        <TabBar tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
+        <p className="mb-4 text-sm text-slate-400">Convert timestamps, compare timezones and calculate date differences.</p>
+        <TabBar tabs={tabs} activeKey={activeTab} onChange={selectTab} />
       </div>
       <div className="flex-1 overflow-y-auto p-6">
-        <ActiveComponent />
+        {visitedTabs.map(key => {
+          const Component = tabComponents[key]
+          return <div key={key} role="tabpanel" aria-label={tabs.find(tab => tab.key === key)?.label} hidden={activeTab !== key}><Component /></div>
+        })}
       </div>
     </div>
   )

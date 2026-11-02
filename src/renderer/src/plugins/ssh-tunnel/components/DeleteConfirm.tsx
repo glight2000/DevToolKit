@@ -1,4 +1,5 @@
 import { AlertTriangle, X } from 'lucide-react'
+import { useDialog } from '../../../hooks/useDialog'
 
 interface DeleteConfirmProps {
   tunnelName: string
@@ -7,16 +8,17 @@ interface DeleteConfirmProps {
 }
 
 export default function DeleteConfirm({ tunnelName, onConfirm, onCancel }: DeleteConfirmProps) {
+  const dialogRef = useDialog(true, onCancel)
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in"
-      onClick={onCancel}
     >
       <div
+        ref={dialogRef} role="dialog" aria-modal="true" aria-label="Delete tunnel" tabIndex={-1}
         className="relative w-full max-w-sm rounded-xl bg-surface-800 border border-surface-700 p-6 shadow-2xl animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
       >
         <button
+          aria-label="Close dialog"
           onClick={onCancel}
           className="absolute right-3 top-3 rounded-lg p-1 text-slate-400 transition-colors hover:bg-surface-700 hover:text-slate-200"
         >

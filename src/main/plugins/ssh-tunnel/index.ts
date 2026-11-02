@@ -1,5 +1,6 @@
 import { ipcMain, dialog, BrowserWindow, clipboard } from 'electron'
-import { spawn } from 'child_process'
+import { openTerminal } from './terminal'
+import { discoverSshAliases } from './ssh-config-discovery'
 import type { PluginMainModule, PluginContext } from '../../../shared/plugin-types'
 import { initSchema } from './db-schema'
 import { TunnelManager } from './tunnel-manager'
@@ -9,6 +10,7 @@ let tunnelManager: TunnelManager | null = null
 
 const IPC_CHANNELS = [
   'tunnel:list',
+  'tunnel:discover-ssh-aliases',
   'tunnel:create',
   'tunnel:update',
   'tunnel:delete',
@@ -24,50 +26,6 @@ const IPC_CHANNELS = [
   'tunnel:list-local-pubkeys'
 ]
 
-function openTerminal(sshCmd: string): boolean {
-  const platform = process.platform
-  try {
-    if (platform === 'win32') {
-      try {
-        spawn('wt', ['--', 'cmd', '/k', sshCmd], { detached: true, stdio: 'ignore' }).unref()
-      } catch {
-        spawn('cmd', ['/c', 'start', 'cmd', '/k', sshCmd], {
-          detached: true,
-          stdio: 'ignore',
-          shell: true
-        }).unref()
-      }
-    } else if (platform === 'darwin') {
-      const script = `tell application "Terminal" to do script "${sshCmd.replace(/"/g, '\\"')}"`
-      spawn('osascript', ['-e', script], { detached: true, stdio: 'ignore' }).unref()
-    } else {
-      const terminals = ['x-terminal-emulator', 'gnome-terminal', 'konsole', 'xterm']
-      for (const term of terminals) {
-        try {
-          if (term === 'gnome-terminal') {
-            spawn(term, ['--', 'bash', '-c', `${sshCmd}; exec bash`], {
-              detached: true,
-              stdio: 'ignore'
-            }).unref()
-          } else {
-            spawn(term, ['-e', `bash -c "${sshCmd}; exec bash"`], {
-              detached: true,
-              stdio: 'ignore'
-            }).unref()
-          }
-          return true
-        } catch {
-          continue
-        }
-      }
-      return false
-    }
-    return true
-  } catch {
-    return false
-  }
-}
-
 export const sshTunnelPlugin: PluginMainModule = {
   id: 'ssh-tunnel',
   name: 'SSH Tunnel',
@@ -78,6 +36,13 @@ export const sshTunnelPlugin: PluginMainModule = {
 
     ipcMain.handle('tunnel:list', () => {
       return tunnelManager?.getAllTunnelInfos() ?? []
+    })
+
+    ipcMain.handle('tunnel:discover-ssh-aliases', (_e, startDistribution?: string) => {
+      if (startDistribution !== undefined && (typeof startDistribution !== 'string' || startDistribution.length > 128 || /[\\/\x00-\x1f]/.test(startDistribution))) {
+        throw new Error('Invalid WSL distribution')
+      }
+      return discoverSshAliases(startDistribution)
     })
 
     ipcMain.handle('tunnel:create', (_e, partial) => {
@@ -153,9 +118,8 @@ export const sshTunnelPlugin: PluginMainModule = {
         if (config.sshPort !== 22) {
           sshArgs.push('-p', String(config.sshPort))
         }
-        sshArgs.push(`${config.username}@${config.sshHost}`)
+        sshArgs.push('-l', config.username, '--', config.sshHost)
 
-        const sshCmd = ['ssh', ...sshArgs].join(' ')
         let passwordCopied = false
 
         if (config.authType === 'password' && config.password) {
@@ -163,7 +127,7 @@ export const sshTunnelPlugin: PluginMainModule = {
           passwordCopied = true
         }
 
-        const launched = openTerminal(sshCmd)
+        const launched = await openTerminal(sshArgs)
         return { success: launched, passwordCopied }
       }
     )

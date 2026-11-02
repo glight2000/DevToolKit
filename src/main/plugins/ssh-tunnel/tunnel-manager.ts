@@ -8,6 +8,11 @@ import {
   deleteTunnel as dbDeleteTunnel
 } from './db-schema'
 
+function validateKeepAliveCount(config: Partial<TunnelConfig>): void {
+  const value = config.keepAliveCountMax ?? 3
+  if (!Number.isInteger(value) || value < 0 || value > 1000) throw new Error('Keep-alive count must be between 0 and 1000')
+}
+
 export class TunnelManager {
   private tunnels: Map<string, SSHTunnel> = new Map()
   private ctx: PluginContext
@@ -41,6 +46,7 @@ export class TunnelManager {
   }
 
   createTunnel(partial: Partial<TunnelConfig>): TunnelInfo {
+    validateKeepAliveCount(partial)
     const now = Date.now()
     const config: TunnelConfig = {
       id: uuidv4(),
@@ -61,6 +67,7 @@ export class TunnelManager {
       autoStart: partial.autoStart ?? false,
       autoReconnect: partial.autoReconnect ?? true,
       keepAliveInterval: partial.keepAliveInterval ?? 10,
+      keepAliveCountMax: partial.keepAliveCountMax ?? 3,
       createdAt: now,
       updatedAt: now
     }
@@ -77,6 +84,7 @@ export class TunnelManager {
   }
 
   async updateTunnel(id: string, partial: Partial<TunnelConfig>): Promise<TunnelInfo> {
+    validateKeepAliveCount(partial)
     const tunnel = this.tunnels.get(id)
     if (!tunnel) {
       throw new Error(`Tunnel not found: ${id}`)

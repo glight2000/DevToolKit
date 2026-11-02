@@ -45,7 +45,7 @@ function unwrapPem(pem: string): string {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
 const labelClass = 'text-xs text-slate-400 mb-1 block'
 
 export default function AsymmetricTool() {

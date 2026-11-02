@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useDialog } from '../../../hooks/useDialog'
+import SshAliasPicker from './SshAliasPicker'
 import {
   X,
   FolderOpen,
@@ -33,7 +35,8 @@ const defaultForm: Omit<TunnelConfig, 'id' | 'createdAt' | 'updatedAt'> = {
   remotePort: 0,
   autoStart: false,
   autoReconnect: true,
-  keepAliveInterval: 30
+  keepAliveInterval: 30,
+  keepAliveCountMax: 3
 }
 
 const tunnelTypeOptions: { value: TunnelType; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -58,6 +61,7 @@ const tunnelTypeOptions: { value: TunnelType; label: string; desc: string; icon:
 ]
 
 export default function TunnelForm({ tunnel, onSave, onClose }: TunnelFormProps) {
+  const dialogRef = useDialog(true, onClose)
   const isEditing = !!tunnel
   const [form, setForm] = useState(defaultForm)
   const [errors, setErrors] = useState<Record<string, boolean>>({})
@@ -88,6 +92,8 @@ export default function TunnelForm({ tunnel, onSave, onClose }: TunnelFormProps)
         newErrors[key] = true
       }
     }
+    const keepAliveCount = form.keepAliveCountMax ?? 3
+    if (!Number.isInteger(keepAliveCount) || keepAliveCount < 0 || keepAliveCount > 1000) newErrors.keepAliveCountMax = true
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -109,18 +115,17 @@ export default function TunnelForm({ tunnel, onSave, onClose }: TunnelFormProps)
   }
 
   const inputCls = (key: string) =>
-    `w-full rounded-lg border bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+    `w-full rounded-lg border bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition-all duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 ${
       errors[key] ? 'border-red-500' : 'border-surface-600'
     }`
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-8 animate-fade-in"
-      onClick={onClose}
     >
       <div
+        ref={dialogRef} role="dialog" aria-modal="true" aria-label={isEditing ? 'Edit Tunnel' : 'New Tunnel'} tabIndex={-1}
         className="relative w-full max-w-2xl rounded-xl border border-surface-700 bg-surface-800 shadow-2xl animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-surface-700 px-6 py-4">
@@ -128,6 +133,7 @@ export default function TunnelForm({ tunnel, onSave, onClose }: TunnelFormProps)
             {isEditing ? 'Edit Tunnel' : 'New Tunnel'}
           </h2>
           <button
+            aria-label="Close dialog"
             onClick={onClose}
             className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-surface-700 hover:text-slate-200"
           >
@@ -136,6 +142,14 @@ export default function TunnelForm({ tunnel, onSave, onClose }: TunnelFormProps)
         </div>
 
         <div className="max-h-[calc(100vh-12rem)] overflow-y-auto px-6 py-5 space-y-6">
+          {!isEditing && <SshAliasPicker onApply={(alias, identityFile) => {
+            setForm(previous => ({ ...previous, name: alias.alias, sshHost: alias.hostname,
+              sshPort: alias.port, username: alias.username, keepAliveInterval: alias.keepAliveInterval,
+              keepAliveCountMax: alias.keepAliveCountMax,
+              authType: identityFile ? 'privateKey' : 'password', privateKeyPath: identityFile,
+              password: '', passphrase: '', remarks: `Imported from ${alias.sourceLabel}: ${alias.alias}` }))
+            setErrors({})
+          }} />}
           {/* Basic Info */}
           <section>
             <h3 className="mb-3 text-sm font-medium text-slate-300 uppercase tracking-wider">
@@ -463,6 +477,11 @@ export default function TunnelForm({ tunnel, onSave, onClose }: TunnelFormProps)
                   value={form.keepAliveInterval}
                   onChange={(e) => set('keepAliveInterval', Number(e.target.value))}
                 />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-slate-400">Unanswered keep-alive limit</label>
+                <input aria-label="Unanswered keep-alive limit" className={inputCls('keepAliveCountMax')} type="number" min={0} max={1000}
+                  value={form.keepAliveCountMax ?? 3} onChange={event => set('keepAliveCountMax', Number(event.target.value))} />
               </div>
             </div>
           </section>

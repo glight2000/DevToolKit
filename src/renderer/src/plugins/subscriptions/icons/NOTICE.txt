@@ -1,0 +1,6 @@
+OpenAI and Claude brand icons: Simple Icons v15.0.0 (CC0-1.0).
+https://github.com/simple-icons/simple-icons/tree/15.0.0
+Original sources:
+https://raw.githubusercontent.com/simple-icons/simple-icons/15.0.0/icons/openai.svg
+https://raw.githubusercontent.com/simple-icons/simple-icons/15.0.0/icons/claude.svg
+Brand marks identify the provider; they do not imply endorsement.

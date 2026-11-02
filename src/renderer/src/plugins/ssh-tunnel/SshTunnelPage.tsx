@@ -133,8 +133,8 @@ export default function SshTunnelPage() {
     <div className="flex h-full flex-col bg-surface-950">
       {/* Header */}
       <header className="glass-header shrink-0 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2.5">
               <Server className="h-5 w-5 text-blue-400" />
               <h1 className="text-lg font-bold text-slate-100 tracking-tight">SSH Tunnel Manager</h1>
@@ -158,7 +158,7 @@ export default function SshTunnelPage() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={startAll}
               disabled={tunnels.length === 0}
@@ -195,7 +195,7 @@ export default function SshTunnelPage() {
 
       {/* Filter bar */}
       <div className="shrink-0 border-b border-surface-800 bg-surface-900 px-6 py-3">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Tabs */}
           <div className="flex items-center gap-1">
             <Filter className="mr-1.5 h-3.5 w-3.5 text-slate-500" />
@@ -208,6 +208,7 @@ export default function SshTunnelPage() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveFilter(tab.key)}
+                  aria-pressed={activeFilter === tab.key}
                   className={`rounded-lg px-3 py-1 text-xs font-medium transition-all duration-200 ${
                     activeFilter === tab.key
                       ? 'bg-surface-700 text-slate-100'
@@ -230,26 +231,28 @@ export default function SshTunnelPage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
+              aria-label="Search tunnels"
               placeholder="Search tunnels..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-56 rounded-lg border border-surface-700 bg-surface-800 py-1.5 pl-9 pr-3 text-xs text-slate-200 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-56 rounded-lg border border-surface-700 bg-surface-800 py-1.5 pl-9 pr-3 text-xs text-slate-200 placeholder-slate-500 transition-all duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto bg-surface-900 px-6 py-5">
+      <section aria-label="Tunnels" className="flex-1 overflow-y-auto bg-surface-950 px-6 py-5">
         {tunnels.length === 0 ? (
           <EmptyState onCreateTunnel={handleNewTunnel} />
         ) : filteredTunnels.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Search className="h-10 w-10 text-slate-600 mb-3" />
             <p className="text-sm text-slate-400">No tunnels match your filter.</p>
+            <button onClick={() => { setSearchQuery(''); setActiveFilter('all') }} className="mt-4 rounded-lg bg-blue-500/10 px-4 py-2 text-sm text-blue-400 hover:bg-blue-500/20">Clear filters</button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-4">
             {filteredTunnels.map((tunnel) => (
               <TunnelCard
                 key={tunnel.config.id}
@@ -262,7 +265,7 @@ export default function SshTunnelPage() {
             ))}
           </div>
         )}
-      </main>
+      </section>
 
       {/* Status bar */}
       <footer className="glass-statusbar shrink-0 px-6 py-2">

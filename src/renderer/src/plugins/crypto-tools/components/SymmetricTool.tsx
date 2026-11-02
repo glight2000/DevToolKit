@@ -18,7 +18,8 @@ const MODE_CONFIG: Record<AesMode, ModeConfig> = {
   'AES-256-GCM': { label: 'AES-256-GCM', keyBits: 256, algorithm: 'AES-GCM', ivBytes: 12 }
 }
 
-function hexToBytes(hex: string): Uint8Array {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
+  if (!/^(?:[0-9a-f]{2})+$/i.test(hex)) throw new Error('Invalid hexadecimal data')
   const bytes = new Uint8Array(hex.length / 2)
   for (let i = 0; i < hex.length; i += 2) {
     bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16)
@@ -32,20 +33,20 @@ function bytesToHex(bytes: Uint8Array): string {
     .join('')
 }
 
-async function deriveKey(password: string, keyBits: number): Promise<Uint8Array> {
+async function deriveKey(password: string, keyBits: number): Promise<Uint8Array<ArrayBuffer>> {
   const data = new TextEncoder().encode(password)
   const hash = await crypto.subtle.digest('SHA-256', data)
   return new Uint8Array(hash).slice(0, keyBits / 8)
 }
 
-function generateIV(length: number): Uint8Array {
+function generateIV(length: number): Uint8Array<ArrayBuffer> {
   const iv = new Uint8Array(length)
   crypto.getRandomValues(iv)
   return iv
 }
 
 const inputClass =
-  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
 const labelClass = 'text-xs text-slate-400 mb-1 block'
 
 export default function SymmetricTool() {
@@ -60,7 +61,7 @@ export default function SymmetricTool() {
 
   const config = MODE_CONFIG[mode]
 
-  const getKeyBytes = async (): Promise<Uint8Array> => {
+  const getKeyBytes = async (): Promise<Uint8Array<ArrayBuffer>> => {
     if (keyFormat === 'hex') {
       const cleaned = keyInput.replace(/\s/g, '')
       if (cleaned.length !== (config.keyBits / 4)) {
@@ -71,7 +72,7 @@ export default function SymmetricTool() {
     return deriveKey(keyInput, config.keyBits)
   }
 
-  const importKey = async (rawKey: Uint8Array): Promise<CryptoKey> => {
+  const importKey = async (rawKey: Uint8Array<ArrayBuffer>): Promise<CryptoKey> => {
     return crypto.subtle.importKey('raw', rawKey, { name: config.algorithm }, false, [
       'encrypt',
       'decrypt'
@@ -170,7 +171,7 @@ export default function SymmetricTool() {
           <div className="flex gap-1 mb-1">
             <button
               onClick={() => setKeyFormat('text')}
-              className={`rounded px-2 py-0.5 text-xs transition-colors ${
+              className={`rounded-sm px-2 py-0.5 text-xs transition-colors ${
                 keyFormat === 'text'
                   ? 'bg-blue-600 text-white'
                   : 'bg-surface-700 text-slate-400 hover:text-slate-200'
@@ -180,7 +181,7 @@ export default function SymmetricTool() {
             </button>
             <button
               onClick={() => setKeyFormat('hex')}
-              className={`rounded px-2 py-0.5 text-xs transition-colors ${
+              className={`rounded-sm px-2 py-0.5 text-xs transition-colors ${
                 keyFormat === 'hex'
                   ? 'bg-blue-600 text-white'
                   : 'bg-surface-700 text-slate-400 hover:text-slate-200'
@@ -209,7 +210,7 @@ export default function SymmetricTool() {
           <label className={labelClass}>IV (Initialization Vector)</label>
           <button
             onClick={handleGenerateIV}
-            className="mb-1 inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-slate-400 transition-colors hover:bg-surface-700 hover:text-slate-200"
+            className="mb-1 inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs text-slate-400 transition-colors hover:bg-surface-700 hover:text-slate-200"
           >
             <RefreshCw className="h-3 w-3" />
             Generate

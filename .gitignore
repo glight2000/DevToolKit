@@ -61,5 +61,7 @@ secrets.json
 
 # Cache
 .cache/
+__pycache__/
+*.pyc
 .parcel-cache/
 .eslintcache

@@ -97,12 +97,12 @@ export default function EditorToolbar({
               onChange={(e) => setTitleValue(e.target.value)}
               onBlur={commitTitle}
               onKeyDown={handleTitleKeyDown}
-              className="w-full max-w-xs rounded border border-surface-600 bg-surface-700 px-2 py-0.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full max-w-xs rounded-sm border border-surface-600 bg-surface-700 px-2 py-0.5 text-sm text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             />
           ) : (
             <button
               onClick={startEditTitle}
-              className="max-w-xs truncate rounded px-2 py-0.5 text-sm font-medium text-slate-200 transition-colors hover:bg-surface-700 hover:text-slate-100"
+              className="max-w-xs truncate rounded-sm px-2 py-0.5 text-sm font-medium text-slate-200 transition-colors hover:bg-surface-700 hover:text-slate-100"
               title="Click to rename"
             >
               {selectedDoc.title}

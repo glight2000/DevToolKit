@@ -1,0 +1,121 @@
+import assert from 'node:assert/strict'
+import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { build } from 'esbuild'
+import { _electron } from 'playwright'
+
+await build({ entryPoints: ['tests/fixtures/ssh-workspace-bootstrap.ts'], outfile: 'out/test-artifacts/ssh-workspace-bootstrap.mjs', bundle: true, platform: 'node', format: 'esm', packages: 'external' })
+const userData = mkdtempSync(join(tmpdir(), 'devtoolkit-workspace-'))
+writeFileSync(join(userData, 'config.json'), JSON.stringify({ activePluginId: 'ssh-connections', theme: 'dark' }))
+mkdirSync('out/test-artifacts', { recursive: true })
+const env = { ...process.env, DEVTOOLKIT_TEST_DATA: userData }; delete env.ELECTRON_RUN_AS_NODE
+const app = await _electron.launch({ args: [resolve('out/test-artifacts/ssh-workspace-bootstrap.mjs')], env, timeout: 30_000 })
+try {
+  const page = await app.firstWindow()
+  page.setDefaultTimeout(20000)
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.getByRole('heading', { name: 'SSH Connections', exact: true }).waitFor()
+  await page.waitForFunction(async () => (await window.api.invoke('ssh:catalog')).sources.length > 0)
+  await app.evaluate(() => globalThis.installSshWorkspaceTestHandlers())
+  const sources = await page.evaluate(async () => (await window.api.invoke('ssh:catalog')).sources)
+  const expectedDefault = sources.find(source => source.id.startsWith('wsl:') && source.state === 'ready')?.id ?? sources.find(source => source.id.startsWith('wsl:'))?.id ?? 'local'
+  await page.getByRole('button', { name: 'New connection', exact: true }).click()
+  assert.equal(await page.getByLabel('Connection environment', { exact: true }).inputValue(), expectedDefault)
+  await page.getByLabel('Connection name', { exact: true }).fill('Production API')
+  await page.getByLabel('Connection hostname', { exact: true }).fill('api.example.test')
+  await page.getByLabel('Connection username', { exact: true }).fill('deploy')
+  await page.getByLabel('Connection group', { exact: true }).fill('Production')
+  await page.getByLabel('Connection tags', { exact: true }).fill('linux, api')
+  await page.getByLabel('Connection notes', { exact: true }).fill('Fixture connection. Never reaches a real host.')
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click()
+  await page.getByRole('article', { name: 'Connection Production API', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Favorite Production API', exact: true }).click()
+  await page.getByRole('button', { name: 'Unfavorite Production API', exact: true }).waitFor()
+  const catalog = await page.evaluate(() => window.api.invoke('ssh:catalog'))
+  assert.equal(catalog.profiles.length, 1)
+  assert.equal(catalog.profiles[0].group, 'Production')
+  assert.deepEqual(catalog.profiles[0].tags, ['linux', 'api'])
+  assert.equal(catalog.profiles[0].favorite, true)
+  const reference = { ...catalog.profiles[0] }
+  await page.getByLabel('Search connections', { exact: true }).fill('no-match')
+  await page.getByText('No matching connections', { exact: true }).waitFor()
+  await page.getByLabel('Search connections', { exact: true }).fill('linux')
+  await page.getByRole('article', { name: 'Connection Production API', exact: true }).waitFor()
+  await page.getByLabel('Search connections', { exact: true }).fill('')
+  // Add fixture-only library records for meaningful layout checks.
+  for (const [name, host, group, tags] of [['Staging Worker', 'staging.example.test', 'Staging', ['worker']], ['Analytics DB', 'db.example.test', 'Production', ['database']], ['Home Lab', 'lab.example.test', 'Personal', ['linux']]]) {
+    await page.evaluate(draft => window.api.invoke('ssh:save-profile', draft), { ...reference, name, host, group, tags, favorite: false })
+  }
+  await page.getByRole('button', { name: 'Refresh connection sources', exact: true }).click()
+  await page.getByRole('article', { name: 'Connection Home Lab', exact: true }).waitFor()
+  await page.screenshot({ path: 'out/test-artifacts/ssh-workspace-dark.png', animations: 'disabled' })
+  await page.setViewportSize({ width: 900, height: 600 })
+  await page.getByRole('button', { name: 'Compact', exact: true }).click()
+  await page.getByRole('button', { name: 'List view', exact: true }).click()
+  await page.screenshot({ path: 'out/test-artifacts/ssh-workspace-compact.png', animations: 'disabled' })
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  await page.getByRole('button', { name: 'Light Mode', exact: true }).click()
+  await page.screenshot({ path: 'out/test-artifacts/ssh-workspace-light.png', animations: 'disabled' })
+
+  // Real xterm -> IPC -> ConPTY -> shell -> IPC -> xterm, without network access.
+  await page.getByLabel('Terminal mode', { exact: true }).selectOption('embedded')
+  await page.getByRole('article', { name: 'Connection Production API', exact: true }).getByRole('button', { name: 'Connect', exact: true }).click()
+  await page.getByRole('tab', { name: 'Fixture terminal', exact: true }).waitFor()
+  await page.waitForFunction(async () => {
+    const sessions = await window.api.invoke('ssh:sessions')
+    return sessions.length === 1 && (await window.api.invoke('ssh:terminal-attach', sessions[0].id)).buffer.includes('PTY_READY')
+  })
+  await page.locator('.xterm-helper-textarea').focus()
+  await page.keyboard.type('echo PTY_INPUT_OK')
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(async () => {
+    const sessions = await window.api.invoke('ssh:sessions')
+    const snapshot = await window.api.invoke('ssh:terminal-attach', sessions[0].id)
+    return snapshot.buffer.includes('PTY_INPUT_OK')
+  })
+  await page.getByRole('tab', { name: 'Connections', exact: true }).click()
+  await page.getByRole('article', { name: 'Connection Home Lab', exact: true }).getByRole('button', { name: 'Connect', exact: true }).click()
+  await page.waitForFunction(async () => (await window.api.invoke('ssh:sessions')).length === 2)
+  await page.getByRole('button', { name: 'Close terminal Fixture terminal', exact: true }).last().click()
+  await page.getByRole('button', { name: 'Disconnect and close', exact: true }).click()
+  await page.waitForFunction(async () => (await window.api.invoke('ssh:sessions')).length === 1)
+  await page.getByRole('dialog', { name: 'Close SSH session', exact: true }).waitFor({ state: 'detached' })
+  await page.getByRole('tab', { name: 'Fixture terminal', exact: true }).click()
+  await page.getByRole('button', { name: 'Time Tools', exact: true }).click()
+  await page.getByRole('heading', { name: 'Time Tools', exact: true }).waitFor()
+  assert.equal((await page.evaluate(() => window.api.invoke('ssh:sessions'))).length, 1)
+  await page.getByRole('button', { name: 'SSH Connections', exact: true }).click()
+  await page.getByRole('tab', { name: 'Fixture terminal', exact: true }).waitFor()
+  await page.screenshot({ path: 'out/test-artifacts/ssh-embedded-terminal.png', animations: 'disabled' })
+  await page.getByRole('button', { name: 'Close terminal Fixture terminal', exact: true }).click()
+  await page.getByRole('button', { name: 'Disconnect and close', exact: true }).click()
+  await page.getByRole('tab', { name: 'Fixture terminal', exact: true }).waitFor({ state: 'detached' })
+  assert.equal((await page.evaluate(() => window.api.invoke('ssh:sessions'))).length, 0)
+  await page.getByLabel('Terminal mode', { exact: true }).selectOption('external')
+  await page.getByRole('article', { name: 'Connection Production API', exact: true }).getByRole('button', { name: 'Connect', exact: true }).click()
+  await page.getByText('Opened in an external terminal. Authentication and connection status appear there.', { exact: true }).waitFor()
+  assert.equal(await app.evaluate(() => globalThis.externalLaunched), true)
+
+  // Editor UI operates on an in-memory fixture; real backup/conflict behavior has filesystem tests.
+  const localName = sources.find(source => source.id === 'local').label
+  await page.getByRole('button', { name: new RegExp(`^${localName}`) }).click()
+  await page.getByRole('button', { name: 'Edit config', exact: true }).click()
+  await page.getByLabel('SSH configuration text', { exact: true }).fill('Host fixture\n HostName updated.example\n')
+  await page.getByRole('button', { name: 'Save source config', exact: true }).click()
+  await page.getByText('Saved. Backup: fixture/backup.conf', { exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click()
+  assert.deepEqual((await page.evaluate(() => window.api.invoke('ssh:catalog'))).profiles.find(profile => profile.id === reference.id), reference)
+  await page.reload()
+  await page.getByRole('heading', { name: 'SSH Connections', exact: true }).waitFor()
+  await page.waitForFunction(() => document.querySelector('select[aria-label="Terminal mode"]')?.value === 'external')
+  await page.getByRole('button', { name: 'DevToolkit 4', exact: true }).click()
+  await page.getByRole('button', { name: 'Details for Home Lab', exact: true }).click()
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await page.getByRole('button', { name: 'Delete connection', exact: true }).click()
+  await page.getByRole('article', { name: 'Connection Home Lab', exact: true }).waitFor({ state: 'detached' })
+  assert.equal((await page.evaluate(() => window.api.invoke('ssh:catalog'))).profiles.length, 3)
+  assert.deepEqual(errors, [])
+  console.log('PASS: SSH library CRUD, separate source editor, WSL default, favorites/groups/tags/search, views/themes, native PTY input/output, persistent sessions, external mode, saved preferences')
+} finally { await app.close() }

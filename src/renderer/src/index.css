@@ -1,6 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-surface-50: rgb(var(--theme-surface-50));
+  --color-surface-100: rgb(var(--theme-surface-100));
+  --color-surface-200: rgb(var(--theme-surface-200));
+  --color-surface-300: rgb(var(--theme-surface-300));
+  --color-surface-400: rgb(var(--theme-surface-400));
+  --color-surface-500: rgb(var(--theme-surface-500));
+  --color-surface-600: rgb(var(--theme-surface-600));
+  --color-surface-700: rgb(var(--theme-surface-700));
+  --color-surface-800: rgb(var(--theme-surface-800));
+  --color-surface-850: rgb(var(--theme-surface-850));
+  --color-surface-900: rgb(var(--theme-surface-900));
+  --color-surface-950: rgb(var(--theme-surface-950));
+  --color-slate-50: rgb(var(--theme-slate-50));
+  --color-slate-100: rgb(var(--theme-slate-100));
+  --color-slate-200: rgb(var(--theme-slate-200));
+  --color-slate-300: rgb(var(--theme-slate-300));
+  --color-slate-400: rgb(var(--theme-slate-400));
+  --color-slate-500: rgb(var(--theme-slate-500));
+  --color-slate-600: rgb(var(--theme-slate-600));
+  --color-slate-700: rgb(var(--theme-slate-700));
+  --color-slate-800: rgb(var(--theme-slate-800));
+  --color-slate-900: rgb(var(--theme-slate-900));
+  --color-slate-950: rgb(var(--theme-slate-950));
+}
+
+@theme {
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-fade-in: fadeIn 0.2s ease-out;
+  --animate-slide-up: slideUp 0.3s ease-out;
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
 
 /* ──────────────────────────────────────────
    Theme tokens
@@ -9,31 +49,31 @@
 :root,
 .dark {
   /* Dark theme (default) — higher surface number = darker */
-  --color-surface-50: 248 250 252;
-  --color-surface-100: 241 245 249;
-  --color-surface-200: 226 232 240;
-  --color-surface-300: 203 213 225;
-  --color-surface-400: 148 163 184;
-  --color-surface-500: 100 116 139;
-  --color-surface-600: 71 85 105;
-  --color-surface-700: 51 65 85;
-  --color-surface-800: 30 41 59;
-  --color-surface-850: 23 32 51;
-  --color-surface-900: 15 23 42;
-  --color-surface-950: 2 6 23;
+  --theme-surface-50: 248 250 252;
+  --theme-surface-100: 241 245 249;
+  --theme-surface-200: 226 232 240;
+  --theme-surface-300: 203 213 225;
+  --theme-surface-400: 148 163 184;
+  --theme-surface-500: 100 116 139;
+  --theme-surface-600: 71 85 105;
+  --theme-surface-700: 51 65 85;
+  --theme-surface-800: 30 41 59;
+  --theme-surface-850: 23 32 51;
+  --theme-surface-900: 15 23 42;
+  --theme-surface-950: 2 6 23;
 
   /* Slate text: lower number = lighter text */
-  --color-slate-50: 248 250 252;
-  --color-slate-100: 241 245 249;
-  --color-slate-200: 226 232 240;
-  --color-slate-300: 203 213 225;
-  --color-slate-400: 148 163 184;
-  --color-slate-500: 100 116 139;
-  --color-slate-600: 71 85 105;
-  --color-slate-700: 51 65 85;
-  --color-slate-800: 30 41 59;
-  --color-slate-900: 15 23 42;
-  --color-slate-950: 2 6 23;
+  --theme-slate-50: 248 250 252;
+  --theme-slate-100: 241 245 249;
+  --theme-slate-200: 226 232 240;
+  --theme-slate-300: 203 213 225;
+  --theme-slate-400: 148 163 184;
+  --theme-slate-500: 100 116 139;
+  --theme-slate-600: 71 85 105;
+  --theme-slate-700: 51 65 85;
+  --theme-slate-800: 30 41 59;
+  --theme-slate-900: 15 23 42;
+  --theme-slate-950: 2 6 23;
 
   /* Glass surfaces use solid dark tint */
   --glass-bg-1: rgba(15, 23, 42, 0.85);
@@ -46,31 +86,31 @@
 
 .light {
   /* Light theme — flipped surface scale: higher number = lighter */
-  --color-surface-50: 15 23 42;
-  --color-surface-100: 30 41 59;
-  --color-surface-200: 51 65 85;
-  --color-surface-300: 71 85 105;
-  --color-surface-400: 100 116 139;
-  --color-surface-500: 148 163 184;
-  --color-surface-600: 203 213 225;
-  --color-surface-700: 226 232 240;
-  --color-surface-800: 241 245 249;
-  --color-surface-850: 245 247 251;
-  --color-surface-900: 248 250 252;
-  --color-surface-950: 255 255 255;
+  --theme-surface-50: 15 23 42;
+  --theme-surface-100: 30 41 59;
+  --theme-surface-200: 51 65 85;
+  --theme-surface-300: 71 85 105;
+  --theme-surface-400: 100 116 139;
+  --theme-surface-500: 148 163 184;
+  --theme-surface-600: 203 213 225;
+  --theme-surface-700: 226 232 240;
+  --theme-surface-800: 241 245 249;
+  --theme-surface-850: 245 247 251;
+  --theme-surface-900: 248 250 252;
+  --theme-surface-950: 255 255 255;
 
   /* Slate text flipped: lower number = darker text */
-  --color-slate-50: 2 6 23;
-  --color-slate-100: 15 23 42;
-  --color-slate-200: 30 41 59;
-  --color-slate-300: 51 65 85;
-  --color-slate-400: 71 85 105;
-  --color-slate-500: 100 116 139;
-  --color-slate-600: 148 163 184;
-  --color-slate-700: 203 213 225;
-  --color-slate-800: 226 232 240;
-  --color-slate-900: 241 245 249;
-  --color-slate-950: 248 250 252;
+  --theme-slate-50: 2 6 23;
+  --theme-slate-100: 15 23 42;
+  --theme-slate-200: 30 41 59;
+  --theme-slate-300: 51 65 85;
+  --theme-slate-400: 71 85 105;
+  --theme-slate-500: 100 116 139;
+  --theme-slate-600: 148 163 184;
+  --theme-slate-700: 203 213 225;
+  --theme-slate-800: 226 232 240;
+  --theme-slate-900: 241 245 249;
+  --theme-slate-950: 248 250 252;
 
   /* Glass surfaces for light theme */
   --glass-bg-1: rgba(248, 250, 252, 0.85);
@@ -82,6 +122,14 @@
 }
 
 @layer base {
+  *, ::before, ::after, ::backdrop, ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
   body {
     @apply bg-surface-950 text-slate-100 antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
@@ -145,7 +193,7 @@
 
 /* Focus visible reset for keyboard nav */
 *:focus-visible {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-1 ring-offset-surface-900;
+  @apply outline-hidden ring-2 ring-blue-500 ring-offset-1 ring-offset-surface-900;
 }
 
 /* Smooth scrolling */
@@ -158,4 +206,33 @@ html {
 .dark input[type='time'],
 .dark input[type='datetime-local'] {
   color-scheme: dark;
+}
+
+[data-interface='compact'] {
+  /* Shared Tailwind tokens keep every tool and dialog at the same density. */
+  --spacing: 0.21875rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.5;
+  --text-lg: 1rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+}
+
+/* Keep accents readable against the light surfaces. */
+.light {
+  --color-blue-400: #2563eb;
+  --color-emerald-400: #047857;
+  --color-red-400: #dc2626;
+  --color-purple-400: #7e22ce;
+  --color-teal-400: #0f766e;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -3,7 +3,7 @@ import CopyButton from '../../../components/common/CopyButton'
 import { ArrowDown, ArrowUp, Clock } from 'lucide-react'
 
 const inputClass =
-  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
 const labelClass = 'text-xs text-slate-400 mb-1 block'
 const primaryBtn =
   'bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-4 py-2 text-sm transition-colors'

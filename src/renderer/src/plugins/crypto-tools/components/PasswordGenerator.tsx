@@ -46,7 +46,7 @@ function generateSecureRandom(max: number): number {
 }
 
 const inputClass =
-  'rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+  'rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
 const labelClass = 'text-xs text-slate-400 mb-1 block'
 
 export default function PasswordGenerator() {
@@ -128,7 +128,7 @@ export default function PasswordGenerator() {
                 type="checkbox"
                 checked={enabledSets[cs.key]}
                 onChange={() => toggleCharset(cs.key)}
-                className="rounded border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                className="rounded-sm border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
               />
               {cs.label}
             </label>
@@ -138,7 +138,7 @@ export default function PasswordGenerator() {
               type="checkbox"
               checked={useCustom}
               onChange={() => setUseCustom(!useCustom)}
-              className="rounded border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+              className="rounded-sm border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
             />
             Custom Characters
           </label>
@@ -160,7 +160,7 @@ export default function PasswordGenerator() {
           type="checkbox"
           checked={excludeAmbiguous}
           onChange={() => setExcludeAmbiguous(!excludeAmbiguous)}
-          className="rounded border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+          className="rounded-sm border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
         />
         Exclude ambiguous characters (0, O, 1, l, I)
       </label>

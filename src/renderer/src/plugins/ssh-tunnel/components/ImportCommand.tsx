@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDialog } from '../../../hooks/useDialog'
 import { Terminal, X, AlertCircle, ArrowRight, Globe, ArrowUpDown, CheckCircle2 } from 'lucide-react'
 import { parseSSHCommand, type ParsedSSHCommand } from '../utils/sshCommand'
 import type { TunnelConfig, TunnelType } from '../../../types'
@@ -27,6 +28,7 @@ const typeLabel: Record<TunnelType, { label: string; cls: string; icon: React.Re
 }
 
 export default function ImportCommand({ onImport, onClose }: ImportCommandProps) {
+  const dialogRef = useDialog(true, onClose)
   const [command, setCommand] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -84,11 +86,10 @@ export default function ImportCommand({ onImport, onClose }: ImportCommandProps)
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-8 animate-fade-in"
-      onClick={onClose}
     >
       <div
+        ref={dialogRef} role="dialog" aria-modal="true" aria-label="Import from Command" tabIndex={-1}
         className="relative w-full max-w-xl rounded-xl border border-surface-700 bg-surface-800 shadow-2xl animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-surface-700 px-6 py-4">
@@ -97,6 +98,7 @@ export default function ImportCommand({ onImport, onClose }: ImportCommandProps)
             <h2 className="text-lg font-semibold text-slate-100">Import from Command</h2>
           </div>
           <button
+            aria-label="Close dialog"
             onClick={onClose}
             className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-surface-700 hover:text-slate-200"
           >
@@ -111,7 +113,7 @@ export default function ImportCommand({ onImport, onClose }: ImportCommandProps)
               Paste your SSH command
             </label>
             <textarea
-              className="w-full rounded-lg border border-surface-600 bg-surface-900 px-4 py-3 font-mono text-sm text-emerald-400 placeholder-slate-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full rounded-lg border border-surface-600 bg-surface-900 px-4 py-3 font-mono text-sm text-emerald-400 placeholder-slate-600 transition-all duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               rows={3}
               placeholder="ssh -L 8080:localhost:3306 root@myserver.com -p 2222"
               value={command}
@@ -181,7 +183,7 @@ export default function ImportCommand({ onImport, onClose }: ImportCommandProps)
               <div className="pt-2 border-t border-surface-700">
                 <label className="mb-1 block text-xs text-slate-400">Tunnel Name</label>
                 <input
-                  className="w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition-all duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   placeholder={`${parsed.username}@${parsed.sshHost}`}
                   value={name}
                   onChange={(e) => setName(e.target.value)}

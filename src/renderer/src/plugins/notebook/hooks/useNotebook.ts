@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { PendingSave } from '../utils/pendingSave'
 
 export interface DocumentMeta {
   id: string
@@ -26,8 +27,8 @@ export function useNotebook() {
   const [isEncrypted, setIsEncrypted] = useState(false)
   const [passwordHash, setPasswordHash] = useState<string | null>(null)
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const lastSavedContentRef = useRef('')
+  const pendingSave = useRef(new PendingSave())
+  const selectionRequest = useRef(0)
 
   const refreshTree = useCallback(async () => {
     try {
@@ -45,11 +46,9 @@ export function useNotebook() {
   }, [refreshTree])
 
   const selectDocument = useCallback(async (id: string | null) => {
-    // Clear any pending debounce
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current)
-      debounceRef.current = null
-    }
+    const request = ++selectionRequest.current
+    await pendingSave.current.flush()
+    if (request !== selectionRequest.current) return
 
     setSelectedId(id)
 
@@ -57,21 +56,23 @@ export function useNotebook() {
       setContent('')
       setIsEncrypted(false)
       setPasswordHash(null)
+      setContentLoading(false)
       return
     }
 
     setContentLoading(true)
     try {
-      const result: DocumentContent = await window.api.invoke('notebook:get-content', id)
+      const result: DocumentContent | null = await window.api.invoke('notebook:get-content', id)
+      if (request !== selectionRequest.current) return
+      if (!result) throw new Error('Document no longer exists')
       setContent(result.content)
       setIsEncrypted(result.isEncrypted)
       setPasswordHash(result.passwordHash)
-      lastSavedContentRef.current = result.content
     } catch (err) {
       console.error('Failed to load document content:', err)
-      setContent('')
+      if (request === selectionRequest.current) setContent('')
     } finally {
-      setContentLoading(false)
+      if (request === selectionRequest.current) setContentLoading(false)
     }
   }, [])
 
@@ -90,9 +91,11 @@ export function useNotebook() {
   )
 
   const updateDocument = useCallback(
-    async (id: string, updates: Partial<DocumentMeta>) => {
+    async (id: string, updates: Partial<Pick<DocumentMeta, 'title' | 'sortOrder' | 'isLocked' | 'isEncrypted'>> & { content?: string; passwordHash?: string | null }) => {
       try {
+        await pendingSave.current.flush()
         const doc: DocumentMeta = await window.api.invoke('notebook:update', id, updates)
+        if (id === selectedId && updates.content !== undefined) setContent(updates.content)
         await refreshTree()
         return doc
       } catch (err) {
@@ -100,27 +103,16 @@ export function useNotebook() {
         return null
       }
     },
-    [refreshTree]
+    [refreshTree, selectedId]
   )
 
   const saveContent = useCallback(
     (id: string, newContent: string) => {
       setContent(newContent)
 
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current)
-      }
-
-      debounceRef.current = setTimeout(async () => {
-        if (newContent !== lastSavedContentRef.current) {
-          try {
-            await window.api.invoke('notebook:update-content', id, newContent)
-            lastSavedContentRef.current = newContent
-          } catch (err) {
-            console.error('Failed to save content:', err)
-          }
-        }
-      }, 1000)
+      pendingSave.current.schedule(async () => {
+        await window.api.invoke('notebook:update-content', id, newContent)
+      })
     },
     []
   )
@@ -170,19 +162,15 @@ export function useNotebook() {
   )
 
   const saveEncryptedContent = useCallback(async (id: string, encryptedContent: string) => {
-    try {
-      await window.api.invoke('notebook:save-encrypted-content', id, encryptedContent)
-    } catch (err) {
-      console.error('Failed to save encrypted content:', err)
-    }
+    await window.api.invoke('notebook:save-encrypted-content', id, encryptedContent)
   }, [])
 
-  // Cleanup debounce on unmount
+  // Persist pending edits when navigating to another tool.
   useEffect(() => {
+    const saves = pendingSave.current
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current)
-      }
+      selectionRequest.current++
+      void saves.flush().catch((error) => console.error('Failed to save document:', error))
     }
   }, [])
 

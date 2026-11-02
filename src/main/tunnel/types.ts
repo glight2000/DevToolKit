@@ -20,6 +20,7 @@ export interface TunnelConfig {
   autoStart: boolean
   autoReconnect: boolean
   keepAliveInterval: number
+  keepAliveCountMax?: number
   createdAt: number
   updatedAt: number
 }

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import DOMPurify from 'dompurify'
 
 interface MarkdownPreviewProps {
   content: string
@@ -16,7 +17,7 @@ function parseInline(text: string): string {
   let result = escapeHtml(text)
 
   // Images: ![alt](url)
-  result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded" />')
+  result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-sm" />')
 
   // Links: [text](url)
   result = result.replace(
@@ -40,12 +41,12 @@ function parseInline(text: string): string {
   result = result.replace(/~~(.+?)~~/g, '<del>$1</del>')
 
   // Inline code: `code`
-  result = result.replace(/`([^`]+)`/g, '<code class="rounded bg-surface-700 px-1.5 py-0.5 text-sm font-mono text-pink-400">$1</code>')
+  result = result.replace(/`([^`]+)`/g, '<code class="rounded-sm bg-surface-700 px-1.5 py-0.5 text-sm font-mono text-pink-400">$1</code>')
 
   return result
 }
 
-function parseMarkdown(markdown: string): string {
+export function parseMarkdown(markdown: string): string {
   const lines = markdown.split('\n')
   const html: string[] = []
   let i = 0
@@ -151,9 +152,9 @@ function parseMarkdown(markdown: string): string {
     while (
       i < lines.length &&
       lines[i].trim() !== '' &&
-      !lines[i].startsWith('#') &&
+      !/^(#{1,6})\s+/.test(lines[i]) &&
       !lines[i].startsWith('>') &&
-      !lines[i].startsWith('```') &&
+      !lines[i].trimStart().startsWith('```') &&
       !/^[\s]*[-*]\s+/.test(lines[i]) &&
       !/^\s*\d+\.\s+/.test(lines[i]) &&
       !/^(\s*[-*_]){3,}\s*$/.test(lines[i])
@@ -170,7 +171,10 @@ function parseMarkdown(markdown: string): string {
 }
 
 export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
-  const html = useMemo(() => parseMarkdown(content), [content])
+  const html = useMemo(
+    () => DOMPurify.sanitize(parseMarkdown(content), { USE_PROFILES: { html: true }, ADD_ATTR: ['target'] }),
+    [content]
+  )
 
   return (
     <div

@@ -31,7 +31,7 @@ async function computeWebCryptoHash(algorithm: string, text: string): Promise<st
 }
 
 const inputClass =
-  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
 const labelClass = 'text-xs text-slate-400 mb-1 block'
 
 export default function HashTool() {
@@ -93,7 +93,7 @@ export default function HashTool() {
           type="checkbox"
           checked={uppercase}
           onChange={() => setUppercase(!uppercase)}
-          className="rounded border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+          className="rounded-sm border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
         />
         Uppercase hex output
       </label>

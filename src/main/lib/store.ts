@@ -1,4 +1,5 @@
 import Store from 'electron-store'
+import type { InterfaceMode } from '../../shared/settings'
 
 export type Theme = 'dark' | 'light'
 
@@ -7,6 +8,7 @@ interface AppSettings {
   activePluginId: string
   sidebarCollapsed: boolean
   theme: Theme
+  interfaceMode: InterfaceMode
 }
 
 const store = new Store<AppSettings>({
@@ -14,7 +16,8 @@ const store = new Store<AppSettings>({
     windowBounds: { width: 1280, height: 850 },
     activePluginId: 'ssh-tunnel',
     sidebarCollapsed: false,
-    theme: 'dark'
+    theme: 'dark',
+    interfaceMode: 'modern'
   }
 })
 
@@ -48,6 +51,15 @@ export function getTheme(): Theme {
 
 export function saveTheme(theme: Theme) {
   store.set('theme', theme)
+}
+
+export function getInterfaceMode(): InterfaceMode {
+  return store.get('interfaceMode') === 'compact' ? 'compact' : 'modern'
+}
+
+export function saveInterfaceMode(mode: InterfaceMode) {
+  if (mode !== 'modern' && mode !== 'compact') throw new Error('Unknown interface mode')
+  store.set('interfaceMode', mode)
 }
 
 export default store

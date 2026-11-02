@@ -162,7 +162,7 @@ function TreeItem({
             onBlur={commitRename}
             onKeyDown={handleKeyDown}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 min-w-0 rounded border border-surface-600 bg-surface-700 px-1 py-0 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="flex-1 min-w-0 rounded-sm border border-surface-600 bg-surface-700 px-1 py-0 text-sm text-slate-100 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
           />
         ) : (
           <span className="flex-1 min-w-0 truncate">{doc.title}</span>
@@ -176,7 +176,7 @@ function TreeItem({
         {hovering && !editing && (
           <button
             onClick={handleDelete}
-            className="shrink-0 rounded p-0.5 text-slate-500 transition-colors hover:bg-red-500/15 hover:text-red-400"
+            className="shrink-0 rounded-sm p-0.5 text-slate-500 transition-colors hover:bg-red-500/15 hover:text-red-400"
             title="Delete"
           >
             <Trash2 className="h-3 w-3" />

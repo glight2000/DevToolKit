@@ -1,0 +1,18 @@
+.paragraph-editor { flex:1; min-height:0; overflow:auto; padding:24px 28px; color:var(--color-slate-200); }
+.paragraph-block { position:relative; padding:8px 62px 8px 20px; border:1px solid transparent; border-radius:7px; margin-bottom:3px; }
+.paragraph-block:hover { background:color-mix(in srgb,var(--color-slate-400) 6%,transparent); }
+.paragraph-block:focus-within { border-color:color-mix(in srgb,#649aec 35%,transparent); background:color-mix(in srgb,var(--color-slate-400) 4%,transparent); }
+.paragraph-block textarea { display:block; width:100%; min-height:26px; resize:none; overflow:hidden; outline:none; border:0; padding:0; background:transparent; color:inherit; font:14px/1.85 Inter,'Segoe UI','Microsoft YaHei',sans-serif; }
+.paragraph-block textarea::placeholder { color:var(--color-slate-500); }
+.paragraph-block textarea:focus-visible { outline:none!important; box-shadow:none; }
+.paragraph-grip { position:absolute; left:3px; top:15px; color:var(--color-slate-500); opacity:0; }
+.paragraph-actions { position:absolute; display:flex; align-items:center; gap:2px; right:5px; top:9px; opacity:0; transition:opacity .1s; }
+.paragraph-actions button { display:grid; place-items:center; padding:4px; border-radius:4px; color:var(--color-slate-400); }
+.paragraph-actions button>span:not(.sr-only) { display:none; }
+.paragraph-actions button:hover { color:var(--color-slate-100); background:var(--color-surface-700); }
+.paragraph-block:hover .paragraph-actions,.paragraph-block:focus-within .paragraph-actions,.paragraph-block:hover .paragraph-grip,.paragraph-block:focus-within .paragraph-grip { opacity:1; }
+.paragraph-add { display:flex; flex-wrap:wrap; align-items:center; gap:5px; margin:9px 0 0 20px; color:var(--color-slate-500); font-size:11px; padding:5px; border-radius:4px; }
+.paragraph-add:hover { color:var(--color-slate-200); background:var(--color-surface-700); }
+.paragraph-add span { font-size:9px; opacity:.7; margin-left:5px; }
+.paragraph-error { color:#db6271; font-size:11px; padding:8px; }
+.paragraph-editor.is-compact { padding:9px 6px; }.is-compact .paragraph-block { padding-left:17px; }.is-compact .paragraph-block textarea { font-size:13px; }

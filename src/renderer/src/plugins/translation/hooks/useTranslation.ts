@@ -19,6 +19,7 @@ export default function useTranslation(
   const abortRef = useRef(0)
 
   useEffect(() => {
+    const requestId = ++abortRef.current
     const trimmed = sourceText.trim()
 
     if (!trimmed) {
@@ -31,8 +32,6 @@ export default function useTranslation(
 
     setLoading(true)
     setError(null)
-
-    const requestId = ++abortRef.current
 
     const timer = setTimeout(async () => {
       try {
@@ -69,6 +68,7 @@ export default function useTranslation(
 
     return () => {
       clearTimeout(timer)
+      abortRef.current++
     }
   }, [sourceText, sourceLang, targetLang])
 

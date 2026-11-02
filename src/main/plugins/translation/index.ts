@@ -7,9 +7,15 @@ export const translationPlugin: PluginMainModule = {
   initialize(_ctx: PluginContext) {
     ipcMain.handle('translation:translate', async (_e, text: string, from: string, to: string) => {
       try {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`
-        const response = await fetch(url)
-        const data = await response.json()
+        const query = new URLSearchParams({ q: text, langpair: `${from}|${to}` })
+        const response = await fetch(`https://api.mymemory.translated.net/get?${query}`, {
+          signal: AbortSignal.timeout(15_000)
+        })
+        if (!response.ok) throw new Error(`Translation service returned HTTP ${response.status}`)
+        const data = await response.json() as {
+          responseStatus?: number
+          responseData?: { translatedText?: string }
+        }
 
         if (data.responseStatus === 200 && data.responseData?.translatedText) {
           return {

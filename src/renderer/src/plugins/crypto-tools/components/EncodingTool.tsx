@@ -79,7 +79,7 @@ function decode(type: EncodingType, input: string): string {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono'
+  'w-full rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-mono'
 const labelClass = 'text-xs text-slate-400 mb-1 block'
 
 export default function EncodingTool() {
@@ -140,7 +140,7 @@ export default function EncodingTool() {
             type="checkbox"
             checked={autoEncode}
             onChange={() => setAutoEncode(!autoEncode)}
-            className="rounded border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+            className="rounded-sm border-surface-600 bg-surface-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
           />
           Auto-transform on input change
         </label>

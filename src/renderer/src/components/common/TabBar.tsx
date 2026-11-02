@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef } from 'react'
 
 interface Tab {
   key: string
@@ -13,38 +13,36 @@ interface TabBarProps {
 }
 
 export default function TabBar({ tabs, activeKey, onChange }: TabBarProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
-  const [indicatorStyle, setIndicatorStyle] = useState<{ left: number; width: number }>({
-    left: 0,
-    width: 0
-  })
-
-  useEffect(() => {
-    const el = tabRefs.current[activeKey]
-    if (el && containerRef.current) {
-      const containerRect = containerRef.current.getBoundingClientRect()
-      const tabRect = el.getBoundingClientRect()
-      setIndicatorStyle({
-        left: tabRect.left - containerRect.left,
-        width: tabRect.width
-      })
-    }
-  }, [activeKey, tabs])
 
   return (
-    <div ref={containerRef} className="relative flex items-center gap-1 border-b border-surface-800">
-      {tabs.map((tab) => (
+    <div role="tablist" aria-label="Tool options" className="flex overflow-x-auto items-center gap-1 border-b border-surface-800">
+      {tabs.map((tab, index) => (
         <button
           key={tab.key}
+          role="tab"
+          aria-selected={activeKey === tab.key}
+          tabIndex={activeKey === tab.key ? 0 : -1}
+          onKeyDown={event => {
+            let next = index
+            if (event.key === 'ArrowRight') next = (index + 1) % tabs.length
+            else if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length
+            else if (event.key === 'Home') next = 0
+            else if (event.key === 'End') next = tabs.length - 1
+            else return
+            event.preventDefault()
+            onChange(tabs[next].key)
+            tabRefs.current[tabs[next].key]?.focus()
+            tabRefs.current[tabs[next].key]?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+          }}
           ref={(el) => {
             tabRefs.current[tab.key] = el
           }}
           onClick={() => onChange(tab.key)}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors duration-200 ${
+          className={`shrink-0 whitespace-nowrap border-b-2 flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors duration-200 ${
             activeKey === tab.key
-              ? 'text-blue-400'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'border-blue-500 bg-blue-500/5 text-blue-400'
+              : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-surface-800'
           }`}
         >
           {tab.icon}
@@ -52,11 +50,6 @@ export default function TabBar({ tabs, activeKey, onChange }: TabBarProps) {
         </button>
       ))}
 
-      {/* Animated underline indicator */}
-      <div
-        className="absolute bottom-0 h-0.5 bg-blue-500 transition-all duration-200 ease-in-out"
-        style={{ left: indicatorStyle.left, width: indicatorStyle.width }}
-      />
     </div>
   )
 }

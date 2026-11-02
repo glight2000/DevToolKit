@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import type { ComponentType } from 'react'
 
 export interface PluginContext {
   db: Database.Database
@@ -18,5 +19,5 @@ export interface PluginRendererManifest {
   id: string
   name: string
   icon: string
-  component: React.ComponentType
+  component: ComponentType
 }

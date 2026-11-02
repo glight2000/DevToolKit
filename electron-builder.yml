@@ -2,14 +2,23 @@ appId: com.devtoolkit.app
 productName: DevToolkit
 directories:
   buildResources: resources
+  # Reuse dist/win-unpacked for local Windows builds; do not create per-fix output directories.
   output: dist
 files:
   - out/**/*
+  - '!out/test-artifacts/**'
   - '!**/*.map'
-# Rebuild native modules (better-sqlite3) against Electron's Node ABI.
-npmRebuild: true
+# better-sqlite3 13 ships ABI-stable N-API binaries for all target platforms.
+# ssh2 works without its optional native accelerators.
+npmRebuild: false
+asarUnpack:
+  - node_modules/node-pty/**
+  - node_modules/better-sqlite3/prebuilds/**
 
 win:
+  extraResources:
+    - from: build/desktop
+      to: desktop
   target:
     - target: nsis
       arch:
